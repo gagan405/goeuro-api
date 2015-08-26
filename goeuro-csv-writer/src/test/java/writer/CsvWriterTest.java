@@ -1,4 +1,4 @@
-package csvwriter;
+package writer;
 
 import entities.City;
 import org.junit.Assert;

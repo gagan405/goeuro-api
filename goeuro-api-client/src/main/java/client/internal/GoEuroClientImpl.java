@@ -5,12 +5,14 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.GenericType;
 
+import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.json.JSONConfiguration;
 import entities.City;
 
 import org.codehaus.jackson.jaxrs.JacksonJaxbJsonProvider;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +45,12 @@ public class GoEuroClientImpl implements GoEuroClient {
                 .get(ClientResponse.class);
 
         checkResponse(response);
-        return response.getEntity(new GenericType<List<City>>(){});
+        try {
+            return response.getEntity(new GenericType<List<City>>() {});
+        }catch (UniformInterfaceException e){
+            logger.error(e.getMessage(), e);
+            throw new GoEuroClientException("Invalid response from endpoint. Check the logs for details");
+        }
     }
 
     private void checkRequest(String city){

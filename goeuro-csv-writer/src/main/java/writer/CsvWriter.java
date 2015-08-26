@@ -1,4 +1,4 @@
-package csvwriter;
+package writer;
 
 import org.supercsv.cellprocessor.ift.CellProcessor;
 import org.supercsv.io.CsvBeanWriter;
@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Created by gbm on 25/08/15.
  */
-public class CsvWriter {
+public class CsvWriter implements writer.Writer {
     private CellProcessor[] processors;
     private String[] headers;
 
@@ -39,4 +39,5 @@ public class CsvWriter {
             }
         }
     }
+
 }
