@@ -2,14 +2,10 @@ package processor;
 
 import client.GoEuroClient;
 import client.internal.GoEuroClientException;
-import client.internal.GoEuroClientImpl;
-import csvwriter.CsvWriter;
 import entities.City;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.supercsv.cellprocessor.constraint.NotNull;
-import org.supercsv.cellprocessor.constraint.UniqueHashCode;
-import org.supercsv.cellprocessor.ift.CellProcessor;
+import writer.Writer;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -18,60 +14,43 @@ import java.util.List;
 /**
  * Created by gbm on 25/08/15.
  */
-public class RequestProcessor {
+public class RequestProcessor implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(RequestProcessor.class);
     private GoEuroClient client;
-    private CsvWriter csvWriter;
+    private Writer writer;
+    private String query;
 
-    public RequestProcessor(){
-        this.client = new GoEuroClientImpl();
-        this.csvWriter = new CsvWriter(getProcessors(), getHeaders());
+    //Request processor takes the clinet and writer and just calls the proper methods
+    //Keeping them as interfaces will make it extensible if we want to have XML Writer or a
+    //client that reads from file
+
+    //We can also use dependency injection
+    public RequestProcessor(GoEuroClient client, Writer writer){
+        this.client = client;
+        this.writer = writer;
     }
 
-    public static void main(String[] args){
-        if(args.length == 0){
-            System.err.println("No input found. This needs a city name to continue.");
-            System.exit(-1);
-        }
-        if(args.length > 1){
-            System.out.println("More than one input entered. Ignoring input strings after the first one.");
-        }
-        RequestProcessor processor = new RequestProcessor();
-        processor.process(args[0]);
+    public RequestProcessor withRequest(String query){
+        this.query = query;
+        return this;
     }
 
-    public void process(String args){
+    public void run(){
         try {
             //Get data from the api
-            List<City> cities = client.doGet(args);
+            List<City> cities = client.doGet(query);
             if(cities.size() == 0){
                 logger.info("Empty list received from end point.");
             }
             //write to csv file
-            csvWriter.write(cities, new FileWriter(args + ".csv"));
-            logger.info("Created CSV file : " + args + ".csv");
+            //This overwrites if file already exists.
+            writer.write(cities, new FileWriter(query + ".csv"));
+            logger.info("Created CSV file : " + query + ".csv");
         }catch (GoEuroClientException e){
-            logger.error(e.getMessage());
-            System.err.println("Error handling request. Check logs for more details");
+            logger.error(e.getMessage(), e);
         } catch (IOException e) {
-            logger.error(e.getMessage());
-            System.err.println("Error writing to file. Check logs for details");
+            logger.error(e.getMessage(), e);
         }
     }
 
-    private CellProcessor[] getProcessors() {
-
-        final CellProcessor[] processors = new CellProcessor[] {
-                new UniqueHashCode(), // ID (must be unique)
-                new NotNull(), // Name
-                new NotNull(), // Type
-                new NotNull(), // Latitude
-                new NotNull() // Longitude
-        };
-        return processors;
-    }
-
-    private String[] getHeaders(){
-        return new String[]{"_id", "name", "type", "latitude", "longitude"};
-    }
 }
